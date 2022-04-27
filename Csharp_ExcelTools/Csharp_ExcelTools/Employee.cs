@@ -14,11 +14,11 @@ public class Employee
     public string? Address { get; set; }
 
     [Description("數值")]
-    public string? Number { get; set; }
+    public int Number { get; set; }
 
 
     [Description("建立日期")]
-    public string? CreateDate { get; set; }
+    public DateTime CreateDate { get; set; }
 }
 
 public class EmployeeExport

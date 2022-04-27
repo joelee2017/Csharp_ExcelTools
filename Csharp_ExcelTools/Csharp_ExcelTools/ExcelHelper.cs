@@ -1,6 +1,4 @@
-﻿using NPOI.HSSF.Util;
-using System.Diagnostics;
-
+﻿
 public static class ExcelHelper
 {
     /// <summary>
@@ -9,50 +7,67 @@ public static class ExcelHelper
     public static IList<T> ExcelToList<T>(string path, string sheetName, int rowStart, string[]? cellVerticalArray)
     {
         List<T> list = new List<T>();
-        ISheet sheet;
-        using (var stream = new FileStream(path, FileMode.Open))
+        ExcelPackage.LicenseContext = OfficeOpenXml.LicenseContext.NonCommercial;
+        FileInfo file = new FileInfo(path);
+        using (ExcelPackage excel = new ExcelPackage(file))
         {
-            stream.Position = 0;
-            XSSFWorkbook xssWorkbook = new XSSFWorkbook(stream);
-            sheet = xssWorkbook.GetSheet(sheetName);
+            ExcelWorksheet sheet = excel.Workbook.Worksheets[sheetName];
 
-            IRow headerRow = sheet.GetRow(0);
-            int cellCount = headerRow.LastCellNum;
-            //for (int j = 0; j < cellCount; j++)
-            //{
-            //    ICell cell = headerRow.GetCell(j);
-            //    if (cell == null || string.IsNullOrWhiteSpace(cell.ToString())) continue;
-            //    {
-            //        // dtTable.Columns.Add(cell.ToString());
-            //    }
-            //}
-            for (int i = (sheet.FirstRowNum + rowStart); i <= sheet.LastRowNum; i++)
+            int rowLast = sheet.Dimension.End.Row;
+            for (int i = rowStart; i < rowLast; i++)
             {
-                IRow row = sheet.GetRow(i);
-                if (row == null) continue;
-                if (row.Cells.All(d => d.CellType == CellType.Blank)) continue;
-
                 var t = typeof(T);
                 T tOject = Activator.CreateInstance<T>();
-                for (int j = row.FirstCellNum; j < cellCount; j++)
+
+                var propertieCount = tOject.GetType().GetProperties().Length;
+                for (int j = 0; j < propertieCount; j++)
                 {
-                    if (row.GetCell(j) != null)
+                    var columnNumber = j + 1;
+                    var columnName = GetColumnName(columnNumber);
+                    if (cellVerticalArray != null && cellVerticalArray.Any())
                     {
-                        var cellAddress = row.GetCell(j).Address;
-                        if (cellVerticalArray != null && cellVerticalArray.Contains(cellAddress.ToString().Substring(0, 1)))
+                        if (cellVerticalArray.Contains(columnName))
                         {
-                            tOject = GetData(headerRow, row, tOject, j);
-                        }
-                        else
-                        {
-                            tOject = GetData(headerRow, row, tOject, j);
+                            tOject = GetData(sheet, i, tOject, j);
                         }
                     }
+                    else
+                    {
+                        tOject = GetData(sheet, i, tOject, j);
+                    }
+
                 }
                 list.Add(tOject);
             }
         }
+
         return list;
+    }
+
+    private static T GetData<T>(ExcelWorksheet sheet, int i, T tOject, int j)
+    {
+        var type = tOject.GetType().GetProperties()[j].PropertyType;
+        //var field = GetDescription<T>(tOject.GetType().GetProperties()[j]);
+
+        var cell = (j + 1);
+        var val = sheet.Cells[i, cell].Value;
+
+        if (val != null)
+        {
+            if (sheet.Cells[i, cell].Style.Numberformat.Format.IndexOf("yyyy") > -1
+                    && sheet.Cells[i, cell].Value.GetType().ToString() == "System.Double")//處理日期時間格式的關鍵代碼 
+                val = sheet.Cells[i, cell].GetValue<DateTime>();
+
+            Object r = new object();
+            if (CanChangeType(val, type))
+            {
+                r = Convert.ChangeType(val, type);
+                tOject.GetType().GetProperties()[j].SetValue(tOject, r);
+            }
+        }
+
+
+        return tOject;
     }
 
     /// <summary>
@@ -60,115 +75,51 @@ public static class ExcelHelper
     /// </summary>
     public static void AddUpdateCellValue<T>(string path, string sheetName, string[]? cellVerticalArray, IList<T> data)
     {
-        XSSFWorkbook xssWorkbook;
-        ISheet sheet;
-        using (var stream = new FileStream(path, FileMode.Open, FileAccess.Read))
+        ExcelPackage.LicenseContext = OfficeOpenXml.LicenseContext.NonCommercial;
+        FileInfo file = new FileInfo(path);
+        using (ExcelPackage excel = new ExcelPackage(file))
         {
-            stream.Position = 0;
-            xssWorkbook = new XSSFWorkbook(stream);
-            stream.Close();
-        }
+            ExcelWorksheet sheet = excel.Workbook.Worksheets[sheetName];
 
-        //var stream = new FileStream(path, FileMode.Open, FileAccess.Write);
-        //stream.Position = 0;
-        //xssWorkbook = new XSSFWorkbook(stream);
-
-        //stream.Position = 0;
-        //XSSFWorkbook xssWorkbook = new XSSFWorkbook(stream);
-
-        //ICellStyle style1 = xssWorkbook.CreateCellStyle();//樣式
-        //style1.Alignment = NPOI.SS.UserModel.HorizontalAlignment.Left;//文字水平對齊方式
-        //style1.VerticalAlignment = NPOI.SS.UserModel.VerticalAlignment.Center;//文字垂直對齊方式
-        //                                                                      //設定邊框
-        //style1.BorderBottom = NPOI.SS.UserModel.BorderStyle.Thin;
-        //style1.BorderLeft = NPOI.SS.UserModel.BorderStyle.Thin;
-        //style1.BorderRight = NPOI.SS.UserModel.BorderStyle.Thin;
-        //style1.BorderTop = NPOI.SS.UserModel.BorderStyle.Thin;
-        //style1.WrapText = true;//自動換行
-
-        //ICellStyle style2 = xssWorkbook.CreateCellStyle();//樣式
-        //IFont font1 = xssWorkbook.CreateFont();//字型
-        //font1.FontName = "楷體";
-        //font1.Color = HSSFColor.Red.Index;//字型顏色
-        //font1.Boldweight = (short)FontBoldWeight.Normal;//字型加粗樣式
-        //style2.SetFont(font1);//樣式裡的字型設定具體的字型樣式
-        //                      //設定背景色
-        //style2.FillForegroundColor = NPOI.HSSF.Util.HSSFColor.Yellow.Index;
-        //style2.FillPattern = FillPattern.SolidForeground;
-        //style2.FillBackgroundColor = NPOI.HSSF.Util.HSSFColor.Yellow.Index;
-        //style2.Alignment = NPOI.SS.UserModel.HorizontalAlignment.Left;//文字水平對齊方式
-        //style2.VerticalAlignment = NPOI.SS.UserModel.VerticalAlignment.Center;//文字垂直對齊方式
-
-        //ICellStyle dateStyle = xssWorkbook.CreateCellStyle();//樣式
-        //dateStyle.Alignment = NPOI.SS.UserModel.HorizontalAlignment.Left;//文字水平對齊方式
-        //dateStyle.VerticalAlignment = NPOI.SS.UserModel.VerticalAlignment.Center;//文字垂直對齊方式
-        //                                                                         //設定資料顯示格式
-        //IDataFormat dataFormatCustom = xssWorkbook.CreateDataFormat();
-        //dateStyle.DataFormat = dataFormatCustom.GetFormat("yyyy-MM-dd HH:mm:ss");
-
-        sheet = xssWorkbook.GetSheet(sheetName);
-
-        ////設定列寬
-        //int[] columnWidth = { 10, 10, 20, 10 };
-        //for (int i = 0; i < columnWidth.Length; i++)
-        //{
-        //    //設定列寬度，256*字元數，因為單位是1/256個字元
-        //    sheet.SetColumnWidth(i, 256 * columnWidth[i]);
-        //}
-
-        IRow headerRow = sheet.GetRow(0);
-        int lastRow = sheet.LastRowNum;
-        int cellCount = headerRow.LastCellNum;
-
-        //sheet.CreateRow(7).CreateCell(1).SetCellValue("test");
-
-        for (int a = 0; a < data.Count; a++)
-        {
-            T? item = data[a];
-            var properties = (item.GetType().GetProperties());
-
+            var bb = sheet.Dimension.Address;
+            int lastRow = sheet.Dimension.End.Row;
             int nowRowIndex = lastRow + 1;
-            IRow row = sheet.CreateRow(nowRowIndex);
-            for (int i = 0; i < properties.Length; i++)
+
+            for (int a = 0; a < data.Count; a++)
             {
-                PropertyInfo? propertie = properties[i];
-                var val = propertie.GetValue(item);
-
-                int j = i;
-
-                ICell cell = row.CreateCell(j);
-                var cellAddress = row.GetCell(j).Address;
-                var columnIndex = row.GetCell(j).ColumnIndex;
-
-                if (val != null)
+                T? item = data[a];
+                var properties = (item.GetType().GetProperties());
+                for (int i = 0; i < properties.Length; i++)
                 {
-                    if (cellVerticalArray != null && cellVerticalArray.Contains(cellAddress.ToString().Substring(0, 1)))
-                    {
-                        cell = sheet.GetRow(nowRowIndex).GetCell(j);
-                        SetCellValue(cell, val);
-                    }
-                    else
-                    {
-                        cell = sheet.GetRow(nowRowIndex).GetCell(j);
-                        SetCellValue(cell, val);
-                    }
+                    PropertyInfo? propertie = properties[i];
+                    var type = propertie.PropertyType;
+                    var val = propertie.GetValue(item);
 
-                    //if (val.GetType() == typeof(DateTime))
-                    //{
-                    //    cell.CellStyle = dateStyle;
-                    //}
+                    int j = i + 1;
+                    if (val != null)
+                    {
+                        // 日期格式需要做特殊處理
+                        if (val.GetType() == typeof(DateTime))
+                        {
+                            sheet.Cells[nowRowIndex, j].Value = Convert.ToDateTime(val);
+                            sheet.Cells[nowRowIndex, j].Style.Numberformat.Format = DateTimeFormatInfo.CurrentInfo.ShortDatePattern;
+                        }
+                        else
+                        {
+                            sheet.Cells[nowRowIndex, j].Value = val;
+                        }
+                    }
                 }
-
+                nowRowIndex++;
             }
-            nowRowIndex++;
+            excel.SaveAs(file);
         }
+    }
 
-        using (var stream = new FileStream(path, FileMode.Open, FileAccess.Write))
-        {
-            //sheet = xssWorkbook.GetSheet(sheetName);
-            xssWorkbook.Write(stream);
-            stream.Close();
-        }
+    public static string GetColumnName(int columnNumber)
+    {
+        var columnLetter = ExcelCellAddress.GetColumnLetter(columnNumber);
+        return columnLetter;
     }
 
     /// <summary>
@@ -204,27 +155,6 @@ public static class ExcelHelper
         {
             cell.SetCellValue(obj.ToString());
         }
-    }
-
-    private static T GetData<T>(IRow headerRow, IRow row, T tOject, int j)
-    {
-        if (!string.IsNullOrEmpty(row.GetCell(j).ToString()) && !string.IsNullOrWhiteSpace(row.GetCell(j).ToString()))
-        {
-            var type = (tOject.GetType().GetProperties()[j].PropertyType);
-
-            var field = GetDescription<T>(tOject.GetType().GetProperties()[j]);
-
-            if (!string.IsNullOrEmpty(field) && field == headerRow.GetCell(j).ToString())
-            {
-                var val = row.GetCell(j).ToString();
-                if (CanChangeType(val, type))
-                {
-                    var r = Convert.ChangeType(val, type);
-                    tOject.GetType().GetProperties()[j].SetValue(tOject, r);
-                }
-            }
-        }
-        return tOject;
     }
 
     private static bool CanChangeType(object source, Type targetType)

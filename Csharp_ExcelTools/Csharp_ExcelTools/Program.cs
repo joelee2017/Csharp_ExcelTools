@@ -9,7 +9,8 @@ string[] cellVerticalArray = { "A", "B", "C", "D", "E" };
 
 //var result = ExcelHelper.ExcelToList<Employee>(str, "員工資料",1, cellVerticalArray);
 
-var result = ExcelHelper.ExcelToList<Employee>(str, "員工資料", 1, null);
+//var result = ExcelHelper.ExcelToList<Employee>(str, "員工資料", 1, null);
+var result = ExcelHelper.ExcelToList<Employee>(str, "員工資料", 2, null);
 
 // 不指定任何條件即全撈
 //var result = ExcelHelper.ReadExcel<Employee>(str, null, null);
@@ -26,6 +27,8 @@ var result = ExcelHelper.ExcelToList<Employee>(str, "員工資料", 1, null);
 //        CreateDate = item.CreateDate
 //    });
 //}
+
+//ExcelHelper.AddUpdateCellValue<Employee>(str, "員工資料", null, result);
 
 ExcelHelper.AddUpdateCellValue<Employee>(str, "員工資料", null, result);
 
