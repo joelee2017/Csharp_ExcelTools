@@ -9,6 +9,18 @@ public static class ExcelHelper
         List<T> list = new List<T>();
         ExcelPackage.LicenseContext = OfficeOpenXml.LicenseContext.NonCommercial;
         FileInfo file = new FileInfo(path);
+        
+        if (!file.Exists)
+        {
+            return null;
+        }
+
+        float fileSize = file.Length / 1024 / 1024;
+        if(fileSize > 5)
+        {
+            return null;
+        }
+
         using (ExcelPackage excel = new ExcelPackage(file))
         {
             ExcelWorksheet sheet = excel.Workbook.Worksheets[sheetName];

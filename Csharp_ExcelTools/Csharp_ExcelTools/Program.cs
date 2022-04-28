@@ -23,26 +23,34 @@ foreach (var item in importFiles)
 }
 
 
-List<EmployeeExport> employeeExports = new List<EmployeeExport>();
-foreach (var item in employees)
+if (employees != null)
 {
-    employeeExports.Add(new EmployeeExport
+    List<EmployeeExport> employeeExports = new List<EmployeeExport>();
+    foreach (var item in employees)
     {
-        Name = item.Name,
-        Tel = item.Tel,
-        Address = item.Address,
-        Number = item.Number,
-        CreateDate = item.CreateDate
-    });
-}
+        employeeExports.Add(new EmployeeExport
+        {
+            Name = item.Name,
+            Tel = item.Tel,
+            Address = item.Address,
+            Number = item.Number,
+            CreateDate = item.CreateDate
+        });
+    }
 
-List<FileModel> exportFiles = config.GetRequiredSection("ExportFiles").Get<List<FileModel>>();
-foreach (var item in exportFiles)
+    List<FileModel> exportFiles = config.GetRequiredSection("ExportFiles").Get<List<FileModel>>();
+    foreach (var item in exportFiles)
+    {
+        ExcelHelper.UpdateExcelCellValue<EmployeeExport>(item.FilePath, item.SheetName, item.CellVertical, employeeExports);
+
+    }
+
+    Console.WriteLine("完成結束");
+}
+else
 {
-    ExcelHelper.UpdateExcelCellValue<EmployeeExport>(item.FilePath, item.SheetName, item.CellVertical, employeeExports);
-
+    Console.WriteLine("異常結束，請確認檔案是否存在或超過 5MB");
 }
 
-
-Console.WriteLine("結束");
 Console.ReadLine();
+Environment.Exit(0);
