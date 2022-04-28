@@ -46,11 +46,11 @@ public class EmployeeExport
     /// 數值
     /// </summary>
     [Description("D")]
-    public string? Number { get; set; }
+    public int? Number { get; set; }
 
     /// <summary>
     /// 建立日期
     /// </summary>
     [Description("E")]
-    public string? CreateDate { get; set; }
+    public DateTime? CreateDate { get; set; }
 }

@@ -80,7 +80,6 @@ public static class ExcelHelper
         {
             ExcelWorksheet sheet = excel.Workbook.Worksheets[sheetName];
 
-            var bb = sheet.Dimension.Address;
             int lastRow = sheet.Dimension.End.Row;
             int nowRowIndex = lastRow + 1;
 
@@ -90,22 +89,21 @@ public static class ExcelHelper
                 var properties = (item.GetType().GetProperties());
                 for (int i = 0; i < properties.Length; i++)
                 {
+                    int j = i + 1;
+
+                    var columnNumber = sheet.Cells[nowRowIndex, j].Start.Column;
+                    var columnName = GetColumnName(columnNumber);
+
                     PropertyInfo? propertie = properties[i];
-                    //var type = propertie.PropertyType;
+                    var field = GetDescription<T>(propertie);
+
                     var val = propertie.GetValue(item);
 
-                    int j = i + 1;
                     if (val != null)
                     {
-                        // 日期格式需要做特殊處理
-                        if (val.GetType() == typeof(DateTime))
+                        if (cellVerticalArray.Contains(columnName))
                         {
-                            sheet.Cells[nowRowIndex, j].Value = Convert.ToDateTime(val);
-                            sheet.Cells[nowRowIndex, j].Style.Numberformat.Format = DateTimeFormatInfo.CurrentInfo.ShortDatePattern;
-                        }
-                        else
-                        {
-                            sheet.Cells[nowRowIndex, j].Value = val;
+                            SeValue(sheet, nowRowIndex, j, val);
                         }
                     }
                 }
@@ -116,6 +114,20 @@ public static class ExcelHelper
             sheet.Column(2).AutoFit();
 
             excel.SaveAs(file);
+        }
+    }
+
+    private static void SeValue(ExcelWorksheet sheet, int nowRowIndex, int j, object? val)
+    {
+        // 日期格式需要做特殊處理
+        if (val.GetType() == typeof(DateTime))
+        {
+            sheet.Cells[nowRowIndex, j].Value = Convert.ToDateTime(val);
+            sheet.Cells[nowRowIndex, j].Style.Numberformat.Format = DateTimeFormatInfo.CurrentInfo.ShortDatePattern;
+        }
+        else
+        {
+            sheet.Cells[nowRowIndex, j].Value = val;
         }
     }
 
