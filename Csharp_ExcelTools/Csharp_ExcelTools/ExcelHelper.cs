@@ -13,7 +13,7 @@ public static class ExcelHelper
         {
             ExcelWorksheet sheet = excel.Workbook.Worksheets[sheetName];
 
-            int rowLast = sheet.Dimension.End.Row;
+            int rowLast = sheet.Dimension.End.Row + 1;
             for (int i = rowStart; i < rowLast; i++)
             {
                 var t = typeof(T);
