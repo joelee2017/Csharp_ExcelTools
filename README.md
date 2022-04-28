@@ -17,3 +17,4 @@ https://www.796t.com/post/OWVhcHc=.html
 
 - 新增 excel - epplus 讀寫功能
 - 新增 appsettings di
+- 資料 model 化

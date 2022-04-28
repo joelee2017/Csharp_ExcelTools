@@ -3,22 +3,28 @@ Console.WriteLine("開始讀取並寫入");
 
 var config = Appsetting.GetConfigurations();
 
+//// 檔案路徑
+//string str = config.GetRequiredSection("FilePath").Get<string>();
 
-// 檔案路徑
-//string str = @"E:\Project\Csharp_ExcelTools\Csharp_ExcelTools\test1.xlsx";
-string str = config.GetRequiredSection("FilePath").Get<string>();
+//string sheetName = config.GetRequiredSection("SheetName").Get<string>();
 
-//包含的 column
-string[] cellVerticalArray = { "A" };
+////包含的 column
+//string[] cellAry = config.GetRequiredSection("CellVertical").Get<string[]>();
+
+//int rowStart = config.GetRequiredSection("RowStart").Get<int>();
 
 
-// 不指定任何條件即全撈
-var result = ExcelHelper.ExcelToList<Employee>(str, "員工資料", 2, null);
+List<FileModel> importFiles = config.GetRequiredSection("ImportFiles").Get<List<FileModel>>();
 
-//var result = ExcelHelper.ExcelToList<Employee>(str, "員工資料", 2, cellVerticalArray);
+IList<Employee> employees = new List<Employee>();
+foreach (var item in importFiles)
+{
+    employees = ExcelHelper.ExcelToList<Employee>(item.FilePath, item.SheetName, item.RowStart, item.CellVertical);
+}
+
 
 List<EmployeeExport> employeeExports = new List<EmployeeExport>();
-foreach (var item in result)
+foreach (var item in employees)
 {
     employeeExports.Add(new EmployeeExport
     {
@@ -30,10 +36,13 @@ foreach (var item in result)
     });
 }
 
-// 不指定任何條件全部寫入
-//ExcelHelper.UpdateExcelCellValue<EmployeeExport>(str, "員工資料", null, employeeExports);
 
-ExcelHelper.UpdateExcelCellValue<EmployeeExport>(str, "員工資料", cellVerticalArray, employeeExports);
+List<FileModel> exportFiles = config.GetRequiredSection("ExportFiles").Get<List<FileModel>>();
+foreach (var item in exportFiles)
+{
+    ExcelHelper.UpdateExcelCellValue<EmployeeExport>(item.FilePath, item.SheetName, item.CellVertical, employeeExports);
+
+}
 
 
 Console.WriteLine("結束");
