@@ -56,14 +56,13 @@ public static class ExcelHelper
         {
             if (sheet.Cells[i, cell].Style.Numberformat.Format.IndexOf("yyyy") > -1
                     && sheet.Cells[i, cell].Value.GetType().ToString() == "System.Double")//處理日期時間格式的關鍵代碼 
-                val = sheet.Cells[i, cell].GetValue<DateTime>();
-
-            Object r = new object();
-            if (CanChangeType(val, type))
             {
-                r = Convert.ChangeType(val, type);
-                tOject.GetType().GetProperties()[j].SetValue(tOject, r);
+                val = sheet.Cells[i, cell].GetValue<DateTime>();
             }
+
+
+            object r = ChangeType(val, type);
+            tOject.GetType().GetProperties()[j].SetValue(tOject, r);
         }
 
 
@@ -73,7 +72,7 @@ public static class ExcelHelper
     /// <summary>
     /// 更新EXCEL 資料
     /// </summary>
-    public static void AddUpdateCellValue<T>(string path, string sheetName, string[]? cellVerticalArray, IList<T> data)
+    public static void UpdateExcelCellValue<T>(string path, string sheetName, string[]? cellVerticalArray, IList<T> data)
     {
         ExcelPackage.LicenseContext = OfficeOpenXml.LicenseContext.NonCommercial;
         FileInfo file = new FileInfo(path);
@@ -92,7 +91,7 @@ public static class ExcelHelper
                 for (int i = 0; i < properties.Length; i++)
                 {
                     PropertyInfo? propertie = properties[i];
-                    var type = propertie.PropertyType;
+                    //var type = propertie.PropertyType;
                     var val = propertie.GetValue(item);
 
                     int j = i + 1;
@@ -112,6 +111,10 @@ public static class ExcelHelper
                 }
                 nowRowIndex++;
             }
+
+            // 自動伸縮欄寬
+            sheet.Column(2).AutoFit();
+
             excel.SaveAs(file);
         }
     }
@@ -168,6 +171,47 @@ public static class ExcelHelper
         {
             return false;
         }
+    }
+
+    private static object ChangeType(object value, Type conversion)
+    {
+        var t = conversion;
+
+        try
+        {
+            if (t.IsGenericType && t.GetGenericTypeDefinition().Equals(typeof(Nullable<>)))
+            {
+                if (value == null)
+                {
+                    return null;
+                }
+
+                t = Nullable.GetUnderlyingType(t);
+            }
+
+            return Convert.ChangeType(value, t);
+        }
+        catch (Exception ex)
+        {
+            return null;
+        }
+    }
+
+    private static T ChangeType<T>(object value)
+    {
+        var t = typeof(T);
+
+        if (t.IsGenericType && t.GetGenericTypeDefinition().Equals(typeof(Nullable<>)))
+        {
+            if (value == null)
+            {
+                return default(T);
+            }
+
+            t = Nullable.GetUnderlyingType(t);
+        }
+
+        return (T)Convert.ChangeType(value, t);
     }
 
     private static string GetDescription<T>(PropertyInfo propertyInfo)
