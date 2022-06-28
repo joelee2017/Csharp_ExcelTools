@@ -1,4 +1,3 @@
-# LinqToExcel
 讀取excel
 
 參考文章：
